@@ -1,0 +1,46 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+// Define una clase llamada "script" que hereda de MonoBehaviour (comportamiento de Unity)
+public class script : MonoBehaviour
+{
+    private new Transform camera; // Referencia al objeto hijo "Camera"
+    public Vector2 sensibility;   // Sensibilidad del ratón en X (horizontal) y Y (vertical)
+
+    // Método Start: se ejecuta una vez al comenzar el juego
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked; // Bloquea el cursor al centro de la pantalla
+        camera = transform.Find("Camera"); // Busca el objeto hijo llamado "Camera" dentro del objeto actual
+    }
+
+    // Método Update: se llama cada frame del juego
+    void Update()
+    {
+        float hor = Input.GetAxis("Mouse X"); // Detecta movimiento horizontal del ratón
+        float ver = Input.GetAxis("Mouse Y"); // Detecta movimiento vertical del ratón
+
+        if(hor != 0)
+        {
+            // Rota el objeto (jugador) en el eje Y según el movimiento horizontal del ratón
+            transform.Rotate(Vector3.up * hor * sensibility.x);
+        }
+
+        if (ver != 0) {
+            // Calcula el nuevo ángulo vertical de la cámara
+            float angle = (camera.localEulerAngles.x - ver * sensibility.y + 360) % 360;
+
+            if (angle > 180)
+            {
+                angle -= 360; // Convierte ángulo a rango -180 a 180
+            }
+
+            // Limita el ángulo entre -80 y 80 para evitar girar demasiado la cámara
+            angle = Mathf.Clamp(angle,-80,80);
+
+            // Aplica la rotación vertical a la cámara
+            camera.localEulerAngles = Vector3.right * angle;
+        }
+    }
+}
