@@ -2,136 +2,128 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Controlador del jugador que maneja movimiento y vista
+// Controlador del jugador, permite mover al jugador y controlar la cámara
 public class PlayerController : MonoBehaviour
 {
-    [Header("Configuración de Movimiento")]
+    // Configuración del movimiento del jugador
     public float moveSpeed = 5f; // Velocidad de movimiento del jugador
 
-    [Header("Configuración de Cámara")]
-    public Vector2 sensibility = new Vector2(2f, 2f); // Sensibilidad del ratón (X, Y)
+    // Configuración de la cámara (sensibilidad del ratón)
+    public Vector2 sensibility = new Vector2(2f, 2f); // Sensibilidad del ratón en los ejes X (horizontal) y Y (vertical)
 
     // Referencias privadas
     private new Transform camera; // Referencia a la cámara del jugador
-    private CharacterController characterController; // Controlador de personaje para el movimiento
+    private CharacterController characterController; // Controlador del personaje para el movimiento
     private float verticalRotation = 0f; // Almacena la rotación vertical de la cámara
 
-    // Método que se ejecuta al iniciar el juego (una sola vez)
+    // Este método se ejecuta al inicio, una sola vez
     void Start()
     {
-        // Bloquear el cursor al centro de la pantalla para un control FPS
+        // Bloquear el cursor al centro de la pantalla (como en un FPS)
         Cursor.lockState = CursorLockMode.Locked;
 
-        // Buscar la cámara que debe ser un objeto hijo de este objeto
+        // Buscar la cámara que debe ser un objeto hijo de este GameObject (el jugador)
         camera = transform.Find("Camera");
 
-        // Obtener el componente CharacterController del mismo GameObject
+        // Obtener el componente CharacterController del jugador
         characterController = GetComponent<CharacterController>();
 
-        // Si no existe CharacterController, añadirlo automáticamente
+        // Si el jugador no tiene CharacterController, agregar uno
         if (characterController == null)
         {
             characterController = gameObject.AddComponent<CharacterController>();
         }
     }
 
-    // Método que se ejecuta cada frame del juego
+    // Este método se ejecuta cada frame, es donde actualizamos el movimiento y la vista
     void Update()
     {
-        // Manejar el movimiento del jugador
+        // Llamamos al método que maneja el movimiento del jugador
         HandleMovement();
 
-        // Manejar la rotación de la cámara con el ratón
+        // Llamamos al método que maneja la rotación de la cámara con el ratón
         HandleMouseLook();
     }
 
-    // Método para manejar el movimiento del jugador con WASD
+    // Método para mover al jugador usando las teclas WASD
     void HandleMovement()
     {
-        // Detectar si las teclas están PRESIONADAS en este frame
-        // GetKey() devuelve true MIENTRAS la tecla esté presionada
-        bool isMovingForward = Input.GetKey(KeyCode.W);  // Tecla W presionada
-        bool isMovingBackward = Input.GetKey(KeyCode.S); // Tecla S presionada
-        bool isMovingLeft = Input.GetKey(KeyCode.A);     // Tecla A presionada
-        bool isMovingRight = Input.GetKey(KeyCode.D);    // Tecla D presionada
+        // Verificar si el jugador está presionando alguna tecla para moverse
+        bool isMovingForward = Input.GetKey(KeyCode.W);  // Tecla W presionada (adelante)
+        bool isMovingBackward = Input.GetKey(KeyCode.S); // Tecla S presionada (atrás)
+        bool isMovingLeft = Input.GetKey(KeyCode.A);     // Tecla A presionada (izquierda)
+        bool isMovingRight = Input.GetKey(KeyCode.D);    // Tecla D presionada (derecha)
 
-        // Crear vector de movimiento (inicialmente en cero)
+        // Crear un vector para almacenar la dirección del movimiento
         Vector3 moveDirection = Vector3.zero;
 
-        // Solo añadir movimiento hacia adelante si W está presionada
+        // Si el jugador presiona la tecla W, mover hacia adelante
         if (isMovingForward)
         {
-            moveDirection += transform.forward; // Añadir dirección hacia adelante
+            moveDirection += transform.forward; // Mover hacia adelante
         }
 
-        // Solo añadir movimiento hacia atrás si S está presionada
+        // Si el jugador presiona la tecla S, mover hacia atrás
         if (isMovingBackward)
         {
-            moveDirection -= transform.forward; // Restar dirección hacia adelante (ir hacia atrás)
+            moveDirection -= transform.forward; // Mover hacia atrás
         }
 
-        // Solo añadir movimiento a la derecha si D está presionada
+        // Si el jugador presiona la tecla D, mover hacia la derecha
         if (isMovingRight)
         {
-            moveDirection += transform.right; // Añadir dirección hacia la derecha
+            moveDirection += transform.right; // Mover hacia la derecha
         }
 
-        // Solo añadir movimiento a la izquierda si A está presionada
+        // Si el jugador presiona la tecla A, mover hacia la izquierda
         if (isMovingLeft)
         {
-            moveDirection -= transform.right; // Restar dirección hacia la derecha (ir a la izquierda)
+            moveDirection -= transform.right; // Mover hacia la izquierda
         }
 
-        // Normalizar el vector para evitar movimiento más rápido en diagonal
-        // Sin normalizar: W+D = velocidad 1.41x más rápida
-        // Con normalizar: W+D = velocidad normal
+        // Normalizamos el vector de movimiento para evitar que el jugador se mueva más rápido en diagonales
         if (moveDirection.magnitude > 0)
         {
             moveDirection = moveDirection.normalized;
         }
 
-        // Aplicar la velocidad y el tiempo transcurrido desde el último frame
-        // Time.deltaTime asegura que el movimiento sea consistente independientemente del framerate
+        // Calculamos el movimiento final multiplicando por la velocidad y el tiempo entre frames
         Vector3 finalMovement = moveDirection * moveSpeed * Time.deltaTime;
 
-        // Aplicar gravedad simple (hacia abajo)
-        // Sin esto, el personaje flotaría en el aire
+        // Añadimos gravedad al movimiento (evita que el jugador flote)
         finalMovement.y = -9.81f * Time.deltaTime;
 
-        // Mover el personaje usando CharacterController
-        // Move() maneja automáticamente las colisiones
+        // Movemos al jugador usando el CharacterController (gestiona colisiones)
         characterController.Move(finalMovement);
-
-        // IMPORTANTE: Si no presionas ninguna tecla, moveDirection será Vector3.zero
-        // y el personaje NO se moverá (esto es exactamente lo que queremos)
     }
 
     // Método para manejar la rotación de la cámara con el ratón
     void HandleMouseLook()
     {
-        // Obtener el movimiento del ratón en este frame
-        float mouseX = Input.GetAxis("Mouse X"); // Movimiento horizontal del ratón
-        float mouseY = Input.GetAxis("Mouse Y"); // Movimiento vertical del ratón
+        // Obtener la cantidad de movimiento del ratón
+        float mouseX = Input.GetAxis("Mouse X"); // Movimiento del ratón en el eje X (horizontal)
+        float mouseY = Input.GetAxis("Mouse Y"); // Movimiento del ratón en el eje Y (vertical)
 
-        // Rotación horizontal (girar el cuerpo del jugador izquierda/derecha)
-        if (mouseX != 0) // Solo rotar si hay movimiento del ratón
+        // Rotación horizontal: mover el cuerpo del jugador a la izquierda o derecha
+        if (mouseX != 0) // Solo rotar si el ratón se mueve
         {
-            // Rotar todo el objeto jugador en el eje Y (arriba)
-            transform.Rotate(Vector3.up * mouseX * sensibility.x);
+            transform.Rotate(Vector3.up * mouseX * sensibility.x); // Rotar en el eje Y (horizontal)
         }
 
-        // Rotación vertical (inclinar la cámara arriba/abajo)
-        if (mouseY != 0) // Solo rotar si hay movimiento del ratón
+        // Rotación vertical: mover la cámara hacia arriba o abajo
+        if (mouseY != 0) // Solo rotar si el ratón se mueve
         {
-            // Restar para invertir el control (movimiento natural de la cámara)
-            verticalRotation -= mouseY * sensibility.y;
+            verticalRotation -= mouseY * sensibility.y; // Restamos para invertir el control
 
-            // Limitar la rotación vertical entre -70° y +70°
-            // Esto evita que la cámara pueda dar vueltas completas
-            verticalRotation = Mathf.Clamp(verticalRotation, -70f, 70f);
+            // Limitar la rotación vertical para que la cámara no gire 360°
+            verticalRotation = Mathf.Clamp(verticalRotation, -25f, 35f);
 
-            // Aplicar la rotación solo a la cámara (no al cuerpo del jugador)
+            // Aplicamos la rotación vertical a la cámara, no al cuerpo del jugador
             camera.localEulerAngles = Vector3.right * verticalRotation;
         }
     }
 }
+
+ruta
+capsula
+    camara
