@@ -1,0 +1,17 @@
+Pasos completos después de usar Smart UV Project:
+
+Usa el "Smart UV Project":
+
+Selecciona todo el objeto en el modo de edición (A).
+
+Presiona U y elige Smart UV Project. Esto debería crear un mapeo UV que debería ajustar mejor la textura en geometrías más complejas.
+
+Aplicar Transformaciones:
+
+Después de hacer el "Smart UV Project", asegúrate de aplicar las transformaciones para evitar problemas con la escala o rotación al exportar.
+
+En el modo objeto, selecciona el modelo.
+
+Presiona Ctrl + A y selecciona "Apply All Transformations".
+
+Esto aplicará la escala, rotación y ubicación del objeto, garantizando que la geometría y el mapeo UV estén en sus valores correctos.
