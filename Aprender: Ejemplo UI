@@ -5,8 +5,7 @@ public class GameManager : MonoBehaviour
 {
     void Awake()
     {
-        // Agregar los componentes necesarios al objeto actual
-        // Añade el contador de calabazas y el gestor de UI al GameObject
+        // Agregar los componentes necesarios
         gameObject.AddComponent<ContadorCalabazas>();
         gameObject.AddComponent<UIManager>();
     }
@@ -15,29 +14,21 @@ public class GameManager : MonoBehaviour
 // CONTADOR DE CALABAZAS
 public class ContadorCalabazas : MonoBehaviour
 {
-    // Instancia estática para acceder globalmente a este script
     public static ContadorCalabazas Instance;
 
-    // Variables que guardan la cantidad de calabazas recolectadas y el total
     private int calabazas = 0;
     private int total = 5;
 
     void Awake()
     {
-        // Asignar la instancia estática a esta clase para que se pueda acceder desde otras partes del código
         Instance = this;
-        // Imprimir un mensaje en la consola para confirmar que el contador ha sido inicializado
         Debug.Log("Contador iniciado");
     }
 
-    // Método para sumar una calabaza
     public void Sumar()
     {
-        // Incrementar el contador de calabazas
         calabazas++;
-        // Actualizar el contador en la UI
         UIManager.Instance.ActualizarContador(calabazas, total);
-        // Imprimir el número de calabazas actuales en la consola
         Debug.Log($"Calabazas: {calabazas}/{total}");
     }
 }
@@ -45,88 +36,76 @@ public class ContadorCalabazas : MonoBehaviour
 // INTERFAZ GRÁFICA
 public class UIManager : MonoBehaviour
 {
-    // Instancia estática para acceder globalmente a este script
     public static UIManager Instance;
 
-    // Referencias a los objetos de texto en la UI
     private Text textoE;
     private Text textoContador;
 
     void Awake()
     {
-        // Asignar la instancia estática a esta clase para que se pueda acceder desde otras partes del código
         Instance = this;
-        // Imprimir un mensaje en la consola para confirmar que el UIManager ha sido inicializado
         Debug.Log("UIManager iniciado");
     }
 
     void Start()
     {
-        // Llamar al método para crear la UI en la pantalla
         CrearUI();
-        // Imprimir un mensaje para confirmar que la UI ha sido creada
         Debug.Log("UI creada");
     }
 
-    // Método para crear la UI del juego
     void CrearUI()
     {
-        // CANVAS: Se crea un nuevo objeto Canvas para contener los elementos de la UI
+        // CANVAS
         GameObject canvas = new GameObject("Canvas");
         Canvas c = canvas.AddComponent<Canvas>();
-        c.renderMode = RenderMode.ScreenSpaceOverlay;  // Establecer el Canvas para que se dibuje sobre la pantalla
-        canvas.AddComponent<CanvasScaler>();  // Añadir un escalador para que la UI se ajuste bien a diferentes resoluciones
-        canvas.AddComponent<GraphicRaycaster>();  // Permite la interacción con la UI (como botones)
+        c.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.AddComponent<CanvasScaler>();
+        canvas.AddComponent<GraphicRaycaster>();
 
-        // TEXTO E (en el centro de la pantalla)
+        // TEXTO E (centro)
         GameObject objE = new GameObject("TextoE");
-        objE.transform.SetParent(canvas.transform, false);  // Colocar el texto dentro del Canvas
-        textoE = objE.AddComponent<Text>();  // Añadir un componente de texto
-        textoE.text = "[ E ]";  // Texto que aparece en la pantalla
-        textoE.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");  // Usar una fuente predeterminada
-        textoE.fontSize = 50;  // Tamaño de la fuente
-        textoE.alignment = TextAnchor.MiddleCenter;  // Alinear el texto en el centro
-        textoE.color = Color.white;  // Color del texto
+        objE.transform.SetParent(canvas.transform, false);
+        textoE = objE.AddComponent<Text>();
+        textoE.text = "[ E ]";
+        textoE.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        textoE.fontSize = 50;
+        textoE.alignment = TextAnchor.MiddleCenter;
+        textoE.color = Color.white;
 
-        // Ajustar el RectTransform del texto "E"
         RectTransform rtE = objE.GetComponent<RectTransform>();
-        rtE.anchorMin = new Vector2(0.5f, 0.5f);  // Anclar el texto al centro
-        rtE.anchorMax = new Vector2(0.5f, 0.5f);  // Anclar el texto al centro
-        rtE.anchoredPosition = new Vector2(0, -100);  // Ajustar la posición vertical (a 100 unidades por debajo del centro)
-        rtE.sizeDelta = new Vector2(200, 80);  // Tamaño del área del texto
+        rtE.anchorMin = new Vector2(0.5f, 0.5f);
+        rtE.anchorMax = new Vector2(0.5f, 0.5f);
+        rtE.anchoredPosition = new Vector2(0, -100); // Ajustar la posición vertical
+        rtE.sizeDelta = new Vector2(200, 80);
 
-        // CONTADOR DE CALABAZAS (arriba centrado)
+        // CONTADOR (arriba centrado)
         GameObject objContador = new GameObject("TextoContador");
-        objContador.transform.SetParent(canvas.transform, false);  // Colocar el contador dentro del Canvas
-        textoContador = objContador.AddComponent<Text>();  // Añadir un componente de texto
-        textoContador.text = "Calabazas: 0/5";  // Texto inicial mostrando las calabazas recolectadas
-        textoContador.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");  // Usar una fuente predeterminada
-        textoContador.fontSize = 30;  // Tamaño de la fuente
-        textoContador.alignment = TextAnchor.UpperCenter;  // Alinear el texto en la parte superior y centrado
-        textoContador.color = Color.yellow;  // Color del texto (amarillo)
+        objContador.transform.SetParent(canvas.transform, false);
+        textoContador = objContador.AddComponent<Text>();
+        textoContador.text = "Calabazas: 0/5";
+        textoContador.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        textoContador.fontSize = 30;
+        textoContador.alignment = TextAnchor.UpperCenter;  // Cambié esto para que esté centrado en la parte superior
+        textoContador.color = Color.blue;
 
-        // Ajustar el RectTransform del contador de calabazas
         RectTransform rtC = objContador.GetComponent<RectTransform>();
-        rtC.anchorMin = new Vector2(0.5f, 1);  // Anclar el texto al centro de la parte superior
-        rtC.anchorMax = new Vector2(0.5f, 1);  // Anclar el texto al centro de la parte superior
-        rtC.anchoredPosition = new Vector2(0, -20);  // Ajustar la posición vertical para que esté cerca de la parte superior
-        rtC.sizeDelta = new Vector2(300, 50);  // Tamaño del área del texto
+        rtC.anchorMin = new Vector2(0.5f, 1);  // Centrado horizontal
+        rtC.anchorMax = new Vector2(0.5f, 1);  // Centrado horizontal
+        rtC.anchoredPosition = new Vector2(0, -20);  // Ajusté la posición vertical para que esté cerca de la parte superior
+        rtC.sizeDelta = new Vector2(300, 50);  // Tamaño del texto
 
-        // Ocultar el texto "E" al inicio
         MostrarE(false);
     }
 
-    // Método para mostrar u ocultar el texto "E" en la pantalla
     public void MostrarE(bool mostrar)
     {
         if (textoE != null)
-            textoE.gameObject.SetActive(mostrar);  // Cambiar la visibilidad del objeto "E"
+            textoE.gameObject.SetActive(mostrar);
     }
 
-    // Método para actualizar el contador de calabazas en la UI
     public void ActualizarContador(int actual, int total)
     {
         if (textoContador != null)
-            textoContador.text = $"Calabazas: {actual}/{total}";  // Actualizar el texto con las calabazas recolectadas y el total
+            textoContador.text = $"Calabazas: {actual}/{total}";
     }
 }
