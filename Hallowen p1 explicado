@@ -1,0 +1,248 @@
+// ============================================
+// SCRIPT 1: GameManager.cs
+// ============================================
+using UnityEngine; // Importa las funcionalidades básicas de Unity
+using UnityEngine.UI; // Importa las herramientas para crear interfaces de usuario
+
+public class GameManager : MonoBehaviour // Clase principal que gestiona el juego
+{
+    void Awake() // Se ejecuta cuando el objeto se crea, antes que Start()
+    {
+        gameObject.AddComponent<ContadorCalabazas>(); // Añade el componente contador al mismo objeto
+        gameObject.AddComponent<UIManager>(); // Añade el componente de interfaz al mismo objeto
+    }
+}
+
+// CONTADOR DE CALABAZAS
+public class ContadorCalabazas : MonoBehaviour // Clase que lleva la cuenta de las calabazas
+{
+    public static ContadorCalabazas Instance; // Variable estática para acceder desde cualquier script (patrón Singleton)
+
+    private int calabazasEnMano = 0; // Calabazas que el jugador lleva consigo pero aún no ha quemado
+    private int calabazasQuemadas = 0; // Calabazas que ya se sumaron al contador oficial
+    private int total = 5; // Total de calabazas que hay que recolectar en el juego
+
+    void Awake() // Se ejecuta al crear el componente
+    {
+        Instance = this; // Guarda una referencia de esta instancia para acceder desde otros scripts
+    }
+
+    // Coger calabaza (NO suma, solo la guarda en mano)
+    public void CogerCalabaza() // Método que se llama cuando recoges una calabaza del suelo
+    {
+        calabazasEnMano++; // Incrementa en 1 las calabazas que llevas (pero aún no cuentan)
+        Debug.Log($"Calabazas en mano: {calabazasEnMano} (aún no cuentan)"); // Muestra mensaje en consola
+    }
+
+    // Quemar calabazas (AQUÍ se suman al contador)
+    public void QuemarCalabazas() // Método que se llama cuando quemas las calabazas en la hoguera
+    {
+        if (calabazasEnMano > 0) // Verifica que tengas al menos una calabaza en mano
+        {
+            calabazasQuemadas += calabazasEnMano; // Suma TODAS las calabazas que llevas al contador oficial
+            Debug.Log($"¡Quemadas {calabazasEnMano} calabazas!"); // Muestra cuántas acabas de quemar
+            calabazasEnMano = 0; // Vacía tu inventario (ya no llevas calabazas)
+            UIManager.Instance.ActualizarContador(calabazasQuemadas, total); // Actualiza el texto en pantalla
+        }
+    }
+
+    // ¿Tiene calabazas en mano?
+    public bool TieneCalabazas() // Método que devuelve true si llevas calabazas, false si no
+    {
+        return calabazasEnMano > 0; // Compara si tienes más de 0 calabazas
+    }
+}
+
+// INTERFAZ GRÁFICA
+public class UIManager : MonoBehaviour // Clase que gestiona los textos y elementos visuales en pantalla
+{
+    public static UIManager Instance; // Variable estática para acceder desde otros scripts (Singleton)
+
+    private Text textoE; // Referencia al texto que muestra "[ E ]" en pantalla
+    private Text textoContador; // Referencia al texto del contador "Calabazas: X/5"
+
+    void Awake() // Se ejecuta al crear el componente
+    {
+        Instance = this; // Guarda referencia de esta instancia para acceso global
+    }
+
+    void Start() // Se ejecuta después de Awake, cuando el objeto está listo
+    {
+        CrearUI(); // Llama al método que crea todos los elementos de la interfaz
+    }
+
+    void CrearUI() // Método que construye toda la interfaz gráfica desde código
+    {
+        // CANVAS
+        GameObject canvas = new GameObject("Canvas"); // Crea un nuevo objeto vacío llamado "Canvas"
+        Canvas c = canvas.AddComponent<Canvas>(); // Le añade el componente Canvas (necesario para UI)
+        c.renderMode = RenderMode.ScreenSpaceOverlay; // Hace que la UI se dibuje sobre todo lo demás
+        canvas.AddComponent<CanvasScaler>(); // Permite que la UI se adapte a diferentes resoluciones
+        canvas.AddComponent<GraphicRaycaster>(); // Permite detectar clicks en elementos UI
+
+        // TEXTO E (centro)
+        GameObject objE = new GameObject("TextoE"); // Crea objeto para el texto de la tecla E
+        objE.transform.SetParent(canvas.transform, false); // Lo hace hijo del Canvas
+        textoE = objE.AddComponent<Text>(); // Añade componente de texto
+        textoE.text = "[ E ]"; // Establece el texto que se mostrará
+        textoE.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // Usa la fuente por defecto de Unity
+        textoE.fontSize = 50; // Tamaño de letra 50
+        textoE.alignment = TextAnchor.MiddleCenter; // Centra el texto horizontal y verticalmente
+        textoE.color = Color.white; // Color blanco
+
+        RectTransform rtE = objE.GetComponent<RectTransform>(); // Obtiene el RectTransform para posicionar
+        rtE.anchorMin = new Vector2(0.5f, 0.5f); // Ancla mínima en el centro (punto de referencia)
+        rtE.anchorMax = new Vector2(0.5f, 0.5f); // Ancla máxima en el centro
+        rtE.anchoredPosition = new Vector2(0, -100); // Posición: centro horizontal, 100 píxeles abajo
+        rtE.sizeDelta = new Vector2(200, 80); // Tamaño del rectángulo: 200 ancho x 80 alto
+
+        // CONTADOR (arriba centrado)
+        GameObject objContador = new GameObject("TextoContador"); // Crea objeto para el contador
+        objContador.transform.SetParent(canvas.transform, false); // Lo hace hijo del Canvas
+        textoContador = objContador.AddComponent<Text>(); // Añade componente de texto
+        textoContador.text = "Calabazas: 0/5"; // Texto inicial del contador
+        textoContador.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // Fuente por defecto
+        textoContador.fontSize = 30; // Tamaño de letra 30
+        textoContador.alignment = TextAnchor.UpperCenter; // Alineado arriba y centrado
+        textoContador.color = Color.green; // Color verde
+
+        RectTransform rtC = objContador.GetComponent<RectTransform>(); // Obtiene RectTransform
+        rtC.anchorMin = new Vector2(0.5f, 1); // Ancla en centro horizontal, arriba vertical
+        rtC.anchorMax = new Vector2(0.5f, 1); // Ancla en centro horizontal, arriba vertical
+        rtC.anchoredPosition = new Vector2(0, -20); // Posición: centrado, 20 píxeles desde arriba
+        rtC.sizeDelta = new Vector2(300, 50); // Tamaño: 300 ancho x 50 alto
+
+        MostrarE(false); // Oculta el texto "[ E ]" al iniciar el juego
+    }
+
+    public void MostrarE(bool mostrar) // Método para mostrar u ocultar el texto "[ E ]"
+    {
+        if (textoE != null) // Verifica que el texto exista
+            textoE.gameObject.SetActive(mostrar); // Activa o desactiva el objeto según el parámetro
+    }
+
+    public void ActualizarContador(int actual, int total) // Actualiza el texto del contador en pantalla
+    {
+        if (textoContador != null) // Verifica que el contador exista
+            textoContador.text = $"Calabazas: {actual}/{total}"; // Actualiza con el formato "X/5"
+    }
+}
+
+
+// ============================================
+// SCRIPT 2: Calabaza.cs
+// ============================================
+using UnityEngine; // Importa funcionalidades de Unity
+
+public class Calabaza : MonoBehaviour // Script que se coloca en cada calabaza del juego
+{
+    [SerializeField] private float distancia = 3f; // Distancia máxima para interactuar (visible en Inspector)
+
+    private Transform jugador; // Referencia a la posición del jugador
+    private bool cerca = false; // Variable para saber si el jugador está cerca
+
+    void Start() // Se ejecuta una vez al inicio
+    {
+        jugador = GameObject.FindGameObjectWithTag("Player").transform; // Busca el objeto con etiqueta "Player"
+    }
+
+    void Update() // Se ejecuta cada frame (60 veces por segundo aprox)
+    {
+        float dist = Vector3.Distance(transform.position, jugador.position); // Calcula distancia entre calabaza y jugador
+
+        // ¿Está cerca?
+        if (dist <= distancia) // Si la distancia es menor o igual a 3 metros
+        {
+            if (!cerca) // Si antes NO estaba cerca (para evitar ejecutar esto cada frame)
+            {
+                cerca = true; // Marca que ahora sí está cerca
+                UIManager.Instance.MostrarE(true); // Muestra el texto "[ E ]" en pantalla
+            }
+
+            // ¿Presionó E?
+            if (Input.GetKeyDown(KeyCode.E)) // Si se presiona la tecla E
+            {
+                Recoger(); // Llama al método que recoge la calabaza
+            }
+        }
+        else // Si NO está cerca
+        {
+            if (cerca) // Si antes SÍ estaba cerca (para evitar ejecutar esto cada frame)
+            {
+                cerca = false; // Marca que ya no está cerca
+                UIManager.Instance.MostrarE(false); // Oculta el texto "[ E ]"
+            }
+        }
+    }
+
+    void Recoger() // Método que se ejecuta al recoger la calabaza
+    {
+        UIManager.Instance.MostrarE(false); // Oculta el texto "[ E ]"
+        ContadorCalabazas.Instance.CogerCalabaza(); // Añade la calabaza al inventario (NO suma al contador aún)
+        gameObject.SetActive(false); // Desactiva este objeto (la calabaza desaparece del mundo)
+    }
+}
+
+
+// ============================================
+// SCRIPT 3: Quemar.cs
+// ============================================
+using UnityEngine; // Importa funcionalidades de Unity
+
+public class Quemar : MonoBehaviour // Script que se coloca en la hoguera u objeto donde se queman calabazas
+{
+    [SerializeField] private float distancia = 3f; // Distancia para interactuar con la hoguera
+
+    private Transform jugador; // Referencia a la posición del jugador
+    private bool cerca = false; // Variable para saber si el jugador está cerca
+
+    void Start() // Se ejecuta una vez al inicio
+    {
+        jugador = GameObject.FindGameObjectWithTag("Player").transform; // Busca el jugador por su etiqueta
+    }
+
+    void Update() // Se ejecuta cada frame
+    {
+        float dist = Vector3.Distance(transform.position, jugador.position); // Calcula distancia
+
+        // ¿Está cerca?
+        if (dist <= distancia) // Si está a menos de 3 metros
+        {
+            if (!cerca) // Si antes no estaba cerca
+            {
+                cerca = true; // Marca que ahora está cerca
+                UIManager.Instance.MostrarE(true); // Muestra "[ E ]"
+            }
+
+            // ¿Presionó E?
+            if (Input.GetKeyDown(KeyCode.E)) // Si presiona E
+            {
+                IntentarQuemar(); // Intenta quemar las calabazas
+            }
+        }
+        else // Si no está cerca
+        {
+            if (cerca) // Si antes sí estaba cerca
+            {
+                cerca = false; // Marca que ya no está cerca
+                UIManager.Instance.MostrarE(false); // Oculta "[ E ]"
+            }
+        }
+    }
+
+    void IntentarQuemar() // Método que intenta quemar las calabazas
+    {
+        // Solo quema si tiene calabazas en mano
+        if (ContadorCalabazas.Instance.TieneCalabazas()) // Verifica si lleva calabazas
+        {
+            UIManager.Instance.MostrarE(false); // Oculta "[ E ]"
+            ContadorCalabazas.Instance.QuemarCalabazas(); // Quema las calabazas (AQUÍ se suman al contador)
+            // REMOVIDO: gameObject.SetActive(false); // Ya no desactiva la hoguera, puede usarse varias veces
+            Debug.Log("¡Calabazas quemadas y sumadas!"); // Mensaje en consola
+        }
+        else // Si no lleva calabazas
+        {
+            Debug.Log("No tienes calabazas para quemar"); // Mensaje de advertencia
+        }
+    }
+}
