@@ -1,0 +1,32 @@
+using UnityEngine;
+using TMPro;
+
+public class temperatura : MonoBehaviour
+{
+    private float maxima_temperatura_inicial = 30f;
+    private float minima_temperatura_inicial = 28f;
+    private float minima = 5f;
+    private float tiempo = 0.1f;
+    public float termometro;
+
+    public TextMeshProUGUI temperaturaText;
+
+    void Start()
+    {
+        termometro = Random.Range(minima_temperatura_inicial, maxima_temperatura_inicial);
+    }
+
+    void Update()
+    {
+        if (termometro > minima)
+        {
+            termometro -= tiempo * Time.deltaTime;
+            termometro = Mathf.Max(termometro, minima);
+        }
+
+        if (temperaturaText != null)
+        {
+            temperaturaText.text = "Temp Actual: " + termometro.ToString("F2") + " °C";
+        }
+    }
+}
