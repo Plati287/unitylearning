@@ -1,0 +1,136 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI; // Necesario para el componente Joystick
+
+public class TouchLook : MonoBehaviour
+{
+    // --- Variables Públicas (Asignar en el Inspector) ---
+    public float sensibility = 100.0f;    // Sensibilidad del toque (cámara)
+    public float Velocidad = 5;           // Velocidad de movimiento del jugador
+    public Joystick joy;                 // Referencia al componente Joystick de movimiento
+    public Camera playerCamera;          // Referencia a la cámara principal (FPS Camera)
+    public float gravedad = -9.8f;       // Valor de la gravedad, ajustable
+
+    // --- Variables Privadas ---
+    private Transform cuerpo;
+    private CharacterController controladorl;
+    private Vector3 caida;               // Vector para la gravedad y la caída (movimiento vertical)
+    private float RotacionX;             // Rotación vertical de la cámara
+    private float RotacionY;             // Rotación horizontal del personaje
+
+    private int cameraTouchId = -1;      // -1 significa que no hay toque activo para la cámara
+
+    private void Start()
+    {
+        cuerpo = GetComponent<Transform>();
+        controladorl = GetComponent<CharacterController>();
+
+        // --- INICIALIZACIÓN DE ROTACIÓN ---
+        if (playerCamera != null)
+        {
+            // Inicializar RotacionX con el ángulo actual de la cámara
+            RotacionX = playerCamera.transform.localEulerAngles.x;
+            if (RotacionX > 180)
+            {
+                RotacionX -= 360;
+            }
+        }
+
+        // Inicializar RotacionY con el ángulo actual del cuerpo
+        RotacionY = cuerpo.localEulerAngles.y;
+    }
+
+    void Update()
+    {
+        // Verificar si el joystick está en movimiento
+        float inputX = joy.Horizontal;
+        float inputZ = joy.Vertical;
+
+        // Movimiento del jugador
+        Vector3 movimientoHorizontal = cuerpo.transform.right * inputX + cuerpo.transform.forward * inputZ;
+        Vector3 velocidadHorizontal = movimientoHorizontal * Velocidad;
+
+        // Lógica de gravedad
+        if (controladorl.isGrounded)
+        {
+            caida.y = -1f;  // Fija al suelo
+        }
+        else
+        {
+            caida.y += gravedad * Time.deltaTime; // Aplica gravedad
+        }
+
+        // Aplicar Movimiento TOTAL en un solo paso (Horizontal + Vertical)
+        Vector3 totalMovimiento = velocidadHorizontal;
+        totalMovimiento.y = caida.y;
+        controladorl.Move(totalMovimiento * Time.deltaTime);
+
+        // --- Control de rotación (Joystick y Pantalla Táctil) ---
+        if (playerCamera != null)
+        {
+            bool isRotating = false;
+
+            // **Control táctil para la cámara**
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                Touch touch = Input.GetTouch(i);
+                if (touch.phase == TouchPhase.Began || touch.phase == TouchPhase.Moved)
+                {
+                    if (touch.position.x > Screen.width / 2 && cameraTouchId == -1)
+                    {
+                        cameraTouchId = touch.fingerId;
+                    }
+                    if (touch.fingerId == cameraTouchId)
+                    {
+                        // Rotación táctil
+                        float xRot = touch.deltaPosition.y * sensibility * Time.deltaTime; // Vertical
+                        float yRot = touch.deltaPosition.x * sensibility * Time.deltaTime; // Horizontal
+
+                        // Rotación Vertical (Cámara)
+                        RotacionX -= xRot;
+                        RotacionX = Mathf.Clamp(RotacionX, -90f, 90f);
+
+                        // Rotación Horizontal (Personaje/Cuerpo)
+                        RotacionY += yRot;
+
+                        // Aplicar la rotación
+                        playerCamera.transform.localRotation = Quaternion.Euler(RotacionX, 0, 0);
+                        cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
+
+                        isRotating = true; // Marcar que se está rotando
+                    }
+                }
+                else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                {
+                    if (touch.fingerId == cameraTouchId)
+                    {
+                        cameraTouchId = -1;
+                    }
+                }
+            }
+
+            // **Control con el Joystick**
+            if (!isRotating && (inputX != 0 || inputZ != 0)) // Solo rotar si el joystick está en movimiento
+            {
+                float rotacionY = joy.Horizontal * sensibility * Time.deltaTime; // Rotación horizontal con el joystick
+
+                // Solo afectamos la rotación horizontal del cuerpo (no la cámara)
+                RotacionY += rotacionY;
+
+                // Aplicar la rotación del cuerpo sin afectar la cámara vertical
+                cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
+
+                isRotating = true; // Marcar que se está rotando
+            }
+
+            // Si no estamos rotando, mantener la rotación de la cámara
+            if (!isRotating)
+            {
+                playerCamera.transform.localRotation = Quaternion.Euler(RotacionX, 0, 0);
+                cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
+            }
+        }
+    }
+}
