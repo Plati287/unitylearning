@@ -1,3 +1,7 @@
+1. ¡cuidado con el canvas del joystick que este maximo mitad pantalla!
+
+
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
