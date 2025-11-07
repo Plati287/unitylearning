@@ -4,140 +4,228 @@ elegir flotante
 1. ¡cuidado con el canvas del joystick que este maximo mitad pantalla!
 
 
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Necesario para el componente Joystick
 
-public class TouchLook : MonoBehaviour
+// Controlador del jugador para móviles con controles táctiles
+public class PlayerController : MonoBehaviour
 {
-    // --- Variables Públicas (Asignar en el Inspector) ---
-    public float sensibility = 100.0f;    // Sensibilidad del toque (cámara)
-    public float Velocidad = 5;           // Velocidad de movimiento del jugador
-    public Joystick joy;                 // Referencia al componente Joystick de movimiento
-    public Camera playerCamera;          // Referencia a la cámara principal (FPS Camera)
-    public float gravedad = -9.8f;       // Valor de la gravedad, ajustable
+    [Header("Configuración de Movimiento")]
+    public float moveSpeed = 5f; // Velocidad de movimiento del jugador
+    public float movementDeadZone = 50f; // Mínimo movimiento requerido para activar (en píxeles)
 
-    // --- Variables Privadas ---
-    private Transform cuerpo;
-    private CharacterController controladorl;
-    private Vector3 caida;               // Vector para la gravedad y la caída (movimiento vertical)
-    private float RotacionX;             // Rotación vertical de la cámara
-    private float RotacionY;             // Rotación horizontal del personaje
+    [Header("Configuración de Cámara")]
+    public float sensibility = 100f; // Sensibilidad táctil para la cámara
 
-    private int cameraTouchId = -1;      // -1 significa que no hay toque activo para la cámara
+    [Header("Zona de Pantalla para Cámara")]
+    [Range(0.1f, 0.9f)]
+    public float screenDivision = 0.5f; // División de la pantalla (0.5 = mitad y mitad)
 
-    private void Start()
+    // Referencias privadas
+    private new Transform camera;
+    private CharacterController characterController;
+    private float rotationX = 0f; // Rotación vertical de la cámara (Pitch)
+    private float rotationY = 0f; // Rotación horizontal del cuerpo (Yaw)
+
+    // Variables para control táctil
+    private int movementTouchId = -1; // ID del toque que controla el movimiento
+    private int cameraTouchId = -1; // ID del toque que controla la cámara
+
+    // Usamos esta variable para el "joystick virtual" de movimiento
+    private Vector2 movementTouchStart = Vector2.zero;
+    private Vector2 movementCurrentPos = Vector2.zero;
+
+    void Start()
     {
-        cuerpo = GetComponent<Transform>();
-        controladorl = GetComponent<CharacterController>();
+        // Buscar la cámara que debe ser un objeto hijo de este GameObject
+        camera = transform.Find("Camera");
 
-        // --- INICIALIZACIÓN DE ROTACIÓN ---
-        if (playerCamera != null)
+        if (camera == null)
         {
-            // Inicializar RotacionX con el ángulo actual de la cámara
-            RotacionX = playerCamera.transform.localEulerAngles.x;
-            if (RotacionX > 180)
+            Debug.LogError("No se encontró la cámara como hijo del jugador. Asegúrate de que existe un objeto 'Camera' hijo.");
+        }
+
+        // Obtener el componente CharacterController del jugador
+        characterController = GetComponent<CharacterController>();
+
+        // Si el jugador no tiene CharacterController, agregar uno (solo si estamos en editor/runtime)
+        if (characterController == null)
+        {
+            characterController = gameObject.AddComponent<CharacterController>();
+        }
+
+        // Inicializar las rotaciones con los valores actuales
+        if (camera != null)
+        {
+            rotationX = camera.localEulerAngles.x;
+            if (rotationX > 180)
             {
-                RotacionX -= 360;
+                rotationX -= 360;
             }
         }
 
-        // Inicializar RotacionY con el ángulo actual del cuerpo
-        RotacionY = cuerpo.localEulerAngles.y;
+        rotationY = transform.localEulerAngles.y;
     }
 
     void Update()
     {
-        // Verificar si el joystick está en movimiento
-        float inputX = joy.Horizontal;
-        float inputZ = joy.Vertical;
+        // Procesar los toques en la pantalla
+        HandleTouchInput();
 
-        // Movimiento del jugador
-        Vector3 movimientoHorizontal = cuerpo.transform.right * inputX + cuerpo.transform.forward * inputZ;
-        Vector3 velocidadHorizontal = movimientoHorizontal * Velocidad;
+        // Manejar el movimiento del jugador
+        HandleMovement();
+    }
 
-        // Lógica de gravedad
-        if (controladorl.isGrounded)
+    // Método para procesar los toques en la pantalla
+    void HandleTouchInput()
+    {
+        // Calcular el límite de división de la pantalla (en X)
+        float screenWidthDivision = Screen.width * screenDivision;
+
+        // --- 1. PROCESAR TERMINACIONES (ENDED/CANCELED) ---
+        for (int i = 0; i < Input.touchCount; i++)
         {
-            caida.y = -1f;  // Fija al suelo
-        }
-        else
-        {
-            caida.y += gravedad * Time.deltaTime; // Aplica gravedad
-        }
+            Touch touch = Input.GetTouch(i);
 
-        // Aplicar Movimiento TOTAL en un solo paso (Horizontal + Vertical)
-        Vector3 totalMovimiento = velocidadHorizontal;
-        totalMovimiento.y = caida.y;
-        controladorl.Move(totalMovimiento * Time.deltaTime);
-
-        // --- Control de rotación (Joystick y Pantalla Táctil) ---
-        if (playerCamera != null)
-        {
-            bool isRotating = false;
-
-            // **Control táctil para la cámara**
-            for (int i = 0; i < Input.touchCount; i++)
+            if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
-                Touch touch = Input.GetTouch(i);
-                if (touch.phase == TouchPhase.Began || touch.phase == TouchPhase.Moved)
+                // Resetear el control de movimiento
+                if (touch.fingerId == movementTouchId)
                 {
-                    if (touch.position.x > Screen.width / 2 && cameraTouchId == -1)
+                    movementTouchId = -1;
+                    movementCurrentPos = Vector2.zero; // Reiniciar para detener el movimiento
+                    movementTouchStart = Vector2.zero;
+                }
+
+                // Resetear el control de cámara
+                if (touch.fingerId == cameraTouchId)
+                {
+                    cameraTouchId = -1;
+                }
+            }
+        }
+
+        // --- 2. PROCESAR INICIOS (BEGAN) Y ACTUALIZACIONES (MOVED/STATIONARY) ---
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch touch = Input.GetTouch(i);
+
+            // A. Asignación de Toques (TouchPhase.Began)
+            if (touch.phase == TouchPhase.Began)
+            {
+                // Determinar si el toque es en la zona izquierda (movimiento) o derecha (cámara)
+                if (touch.position.x < screenWidthDivision)
+                {
+                    // Zona izquierda: Control de movimiento SOLAMENTE
+                    if (movementTouchId == -1) // Solo si no hay otro toque controlando el movimiento
+                    {
+                        movementTouchId = touch.fingerId;
+                        movementTouchStart = touch.position; // Se registra el punto de inicio
+                        movementCurrentPos = touch.position;
+                    }
+                }
+                else
+                {
+                    // Zona derecha: Control de cámara SOLAMENTE
+                    if (cameraTouchId == -1) // Solo si no hay otro toque controlando la cámara
                     {
                         cameraTouchId = touch.fingerId;
                     }
-                    if (touch.fingerId == cameraTouchId)
-                    {
-                        // Rotación táctil
-                        float xRot = touch.deltaPosition.y * sensibility * Time.deltaTime; // Vertical
-                        float yRot = touch.deltaPosition.x * sensibility * Time.deltaTime; // Horizontal
-
-                        // Rotación Vertical (Cámara)
-                        RotacionX -= xRot;
-                        RotacionX = Mathf.Clamp(RotacionX, -90f, 90f);
-
-                        // Rotación Horizontal (Personaje/Cuerpo)
-                        RotacionY += yRot;
-
-                        // Aplicar la rotación
-                        playerCamera.transform.localRotation = Quaternion.Euler(RotacionX, 0, 0);
-                        cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
-
-                        isRotating = true; // Marcar que se está rotando
-                    }
                 }
-                else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            }
+
+            // B. Actualizar Movimiento de Cámara (Rotación) - SOLO SI ES EL TOQUE DE CÁMARA
+            if (touch.fingerId == cameraTouchId && (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary))
+            {
+                // Rotación táctil usando deltaPosition (solo el movimiento desde el último frame)
+                float xRot = touch.deltaPosition.y * sensibility * Time.deltaTime; // Vertical
+                float yRot = touch.deltaPosition.x * sensibility * Time.deltaTime; // Horizontal
+
+                // Rotación Vertical (Cámara - Pitch)
+                rotationX -= xRot;
+                rotationX = Mathf.Clamp(rotationX, -90f, 90f);
+
+                // Rotación Horizontal (Personaje/Cuerpo - Yaw)
+                rotationY += yRot; // Acumular la rotación horizontal
+
+                // Aplicar la rotación
+                if (camera != null)
                 {
-                    if (touch.fingerId == cameraTouchId)
-                    {
-                        cameraTouchId = -1;
-                    }
+                    camera.localRotation = Quaternion.Euler(rotationX, 0, 0);
                 }
+                // ¡IMPORTANTE! La rotación Y SIEMPRE se aplica al cuerpo principal
+                transform.localRotation = Quaternion.Euler(0, rotationY, 0);
             }
-
-            // **Control con el Joystick**
-            if (!isRotating && (inputX != 0 || inputZ != 0)) // Solo rotar si el joystick está en movimiento
+            // C. Actualizar Posición del Joystick Virtual (Movimiento) - SOLO SI ES EL TOQUE DE MOVIMIENTO
+            else if (touch.fingerId == movementTouchId && (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary))
             {
-                float rotacionY = joy.Horizontal * sensibility * Time.deltaTime; // Rotación horizontal con el joystick
-
-                // Solo afectamos la rotación horizontal del cuerpo (no la cámara)
-                RotacionY += rotacionY;
-
-                // Aplicar la rotación del cuerpo sin afectar la cámara vertical
-                cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
-
-                isRotating = true; // Marcar que se está rotando
-            }
-
-            // Si no estamos rotando, mantener la rotación de la cámara
-            if (!isRotating)
-            {
-                playerCamera.transform.localRotation = Quaternion.Euler(RotacionX, 0, 0);
-                cuerpo.transform.localRotation = Quaternion.Euler(0, RotacionY, 0);
+                // Si el toque está activo, actualizamos su posición actual
+                movementCurrentPos = touch.position;
             }
         }
+    }
+
+    // Método para mover al jugador basado en el input táctil
+    void HandleMovement()
+    {
+        Vector3 moveDirection = Vector3.zero;
+
+        // Solo mover si hay un toque activo en la zona de movimiento
+        if (movementTouchId != -1)
+        {
+            // Calcular el delta (vector del joystick)
+            Vector2 delta = movementCurrentPos - movementTouchStart;
+
+            // ⚠️ VERIFICACIÓN CLAVE: Solo mover si el delta es mayor que el umbral (Dead Zone)
+            if (delta.magnitude > movementDeadZone)
+            {
+                // Normalizar el delta para obtener la dirección deseada
+                Vector2 normalizedDelta = delta.normalized;
+
+                // Construir la dirección de movimiento relativa al *cuerpo* del jugador
+                // El vector 'transform.forward' ya incluye la rotación Y del personaje (rotationY),
+                // por lo que no es necesario rotar el vector de movimiento explícitamente.
+
+                // Mapear el eje Y de la pantalla a Forward/Backward
+                if (normalizedDelta.y > 0.3f) // Adelante
+                {
+                    moveDirection += transform.forward;
+                }
+                else if (normalizedDelta.y < -0.3f) // Atrás
+                {
+                    moveDirection -= transform.forward;
+                }
+
+                // Mapear el eje X de la pantalla a Strafe (Right/Left)
+                if (normalizedDelta.x > 0.3f) // Derecha
+                {
+                    moveDirection += transform.right;
+                }
+                else if (normalizedDelta.x < -0.3f) // Izquierda
+                {
+                    moveDirection -= transform.right;
+                }
+            }
+        }
+
+        // Normalizar el vector de movimiento final para evitar velocidad mayor en diagonales
+        if (moveDirection.magnitude > 0)
+        {
+            moveDirection = moveDirection.normalized;
+        }
+
+        // Calcular el movimiento final
+        Vector3 finalMovement = moveDirection * moveSpeed * Time.deltaTime;
+
+        // Añadir gravedad (independiente del movimiento horizontal)
+        finalMovement.y += -9.81f * Time.deltaTime;
+
+        // Mover al jugador
+        characterController.Move(finalMovement);
+
+        // ¡IMPORTANTE! La rotación del jugador (transform.localRotation) se maneja
+        // EXCLUSIVAMENTE en HandleTouchInput con el 'cameraTouchId'. 
+        // HandleMovement SOLO aplica CharacterController.Move().
     }
 }
