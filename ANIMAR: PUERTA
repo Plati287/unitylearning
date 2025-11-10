@@ -18,3 +18,25 @@ Avanza al frame donde quieres que termine de abrirse (ej: frame 60):
 
 Presiona R (rotar) > Z (eje Z) > escribe 90 (para 90 grados)
 Presiona I > Rotation nuevamente
+
+IMAGINATE QUE LA PUERTA TIENE COMO POMOS QUE QUIERES QUE SE MUEVAN CON ELLA.. PERO SON OBJETOS DIEFERENTES..
+Método con Parent-Child (RECOMENDADO):
+1. Establece la jerarquía:
+
+Selecciona el pomo
+Luego selecciona la puerta (Shift + clic)
+Ctrl+P > Object (Keep Transform)
+
+2. Anima ambos al mismo tiempo:
+Frame 1:
+
+Selecciona el pomo: I > Rotation
+Selecciona la puerta: I > Rotation
+
+Frame 60:
+
+Selecciona el pomo: Rótalo (R+X/Y) > I > Rotation
+Selecciona la puerta: Rótala (R+Z+90) > I > Rotation
+
+Resultado:
+Los dos objetos se moverán simultáneamente desde el frame 1 al 60. El pomo girará sobre sí mismo MIENTRAS la puerta se abre (porque el pomo está "pegado" a la puerta).
