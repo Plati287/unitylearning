@@ -1,0 +1,20 @@
+Para animar la apertura de una puerta en Blender, aquí te explico el proceso paso a paso:
+Método básico con keyframes:
+1. Prepara el punto de pivote:
+
+Selecciona la puerta
+En el modo Edit (Tab), posiciona el cursor 3D en la bisagra (Shift+S > "Cursor to Selected")
+En modo Object, ve a Object > Set Origin > Origin to 3D Cursor
+Esto hará que la puerta rote desde las bisagras
+
+2. Anima la rotación:
+
+En el frame 1, con la puerta seleccionada:
+
+Presiona I > Rotation (para insertar un keyframe de rotación)
+
+
+Avanza al frame donde quieres que termine de abrirse (ej: frame 60):
+
+Presiona R (rotar) > Z (eje Z) > escribe 90 (para 90 grados)
+Presiona I > Rotation nuevamente
