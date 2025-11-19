@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviourPunCallbacks
     public float gravity = -9.81f;
 
     [Header("Camera Settings")]
+    public float cameraHeight = 3.5f;
     public Vector2 sensibility = new Vector2(2f, 2f);
     public float minVerticalAngle = -80f;
     public float maxVerticalAngle = 80f;
@@ -18,10 +19,10 @@ public class PlayerController : MonoBehaviourPunCallbacks
     private CharacterController characterController;
     private float verticalRotation = 0f;
     private Vector3 velocity;
+    private bool cursorShouldBeLocked = true; // Estado deseado del cursor
 
     void Start()
     {
-        // Configurar el CharacterController
         characterController = GetComponent<CharacterController>();
         if (characterController == null)
         {
@@ -31,20 +32,16 @@ public class PlayerController : MonoBehaviourPunCallbacks
             characterController.height = 2f;
         }
 
-        // Configurar la cámara solo para el jugador local
         ConfigureCamera();
 
-        // Solo bloquear el cursor si es nuestro jugador
         if (photonView.IsMine)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            LockCursor();  // Asegura que el cursor esté bloqueado al principio
         }
     }
 
     void ConfigureCamera()
     {
-        // Buscar la cámara hija
         Transform cameraTransform = transform.Find("Camera");
 
         if (cameraTransform != null)
@@ -58,20 +55,17 @@ public class PlayerController : MonoBehaviourPunCallbacks
         }
         else
         {
-            // Si no existe, crear la cámara
             GameObject cameraObj = new GameObject("Camera");
             cameraObj.transform.SetParent(transform);
-            cameraObj.transform.localPosition = new Vector3(0, 1.6f, 0);
+            cameraObj.transform.localPosition = new Vector3(0, cameraHeight, 0);
             cameraObj.transform.localRotation = Quaternion.identity;
             playerCamera = cameraObj.AddComponent<Camera>();
         }
 
-        // Configurar AudioListener
         AudioListener audioListener = playerCamera.GetComponent<AudioListener>();
 
         if (photonView.IsMine)
         {
-            // Activar cámara y audio para el jugador local
             playerCamera.enabled = true;
             playerCamera.tag = "MainCamera";
 
@@ -83,7 +77,6 @@ public class PlayerController : MonoBehaviourPunCallbacks
         }
         else
         {
-            // Desactivar cámara y audio para jugadores remotos
             playerCamera.enabled = false;
 
             if (audioListener != null)
@@ -95,25 +88,35 @@ public class PlayerController : MonoBehaviourPunCallbacks
 
     void Update()
     {
-        // Solo procesar input para el jugador local
         if (!photonView.IsMine)
         {
             return;
         }
 
+        // Forzar el bloqueo del cursor si se desbloquea accidentalmente
+        if (cursorShouldBeLocked && Cursor.lockState != CursorLockMode.Locked)
+        {
+            LockCursor();
+        }
+
         HandleMovement();
         HandleMouseLook();
 
-        // Desbloquear cursor con ESC
+        // Toggle con ESC
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             ToggleCursorLock();
+        }
+
+        // Detectar si el ratón toca la pantalla después de desbloquearlo con Escape
+        if (Cursor.lockState != CursorLockMode.Locked && Input.mousePosition.x >= 0 && Input.mousePosition.x <= Screen.width && Input.mousePosition.y >= 0 && Input.mousePosition.y <= Screen.height)
+        {
+            LockCursor(); // Bloquear el cursor al tocar la pantalla
         }
     }
 
     void HandleMovement()
     {
-        // Obtener input
         float horizontal = 0f;
         float vertical = 0f;
 
@@ -122,22 +125,17 @@ public class PlayerController : MonoBehaviourPunCallbacks
         if (Input.GetKey(KeyCode.D)) horizontal += 1f;
         if (Input.GetKey(KeyCode.A)) horizontal -= 1f;
 
-        // Calcular dirección de movimiento
         Vector3 moveDirection = (transform.right * horizontal + transform.forward * vertical).normalized;
-
-        // Aplicar velocidad de movimiento
         Vector3 move = moveDirection * moveSpeed * Time.deltaTime;
 
-        // Aplicar gravedad
         if (characterController.isGrounded && velocity.y < 0)
         {
-            velocity.y = -2f; // Pequeña fuerza para mantener en el suelo
+            velocity.y = -2f;
         }
 
         velocity.y += gravity * Time.deltaTime;
         move.y = velocity.y * Time.deltaTime;
 
-        // Mover el personaje
         characterController.Move(move);
     }
 
@@ -149,14 +147,11 @@ public class PlayerController : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Obtener input del mouse
         float mouseX = Input.GetAxis("Mouse X") * sensibility.x;
         float mouseY = Input.GetAxis("Mouse Y") * sensibility.y;
 
-        // Rotación horizontal (jugador completo)
         transform.Rotate(Vector3.up * mouseX);
 
-        // Rotación vertical (solo la cámara)
         verticalRotation -= mouseY;
         verticalRotation = Mathf.Clamp(verticalRotation, minVerticalAngle, maxVerticalAngle);
 
@@ -166,29 +161,54 @@ public class PlayerController : MonoBehaviourPunCallbacks
         }
     }
 
+    void LockCursor()
+    {
+        cursorShouldBeLocked = true;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    void UnlockCursor()
+    {
+        cursorShouldBeLocked = false;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
     void ToggleCursorLock()
     {
-        if (Cursor.lockState == CursorLockMode.Locked)
+        if (cursorShouldBeLocked)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            UnlockCursor();
         }
         else
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            LockCursor();
         }
     }
 
-    // Método público para desactivar el control (útil para menús, etc.)
+    // Método público para desactivar el control
     public void SetControlEnabled(bool enabled)
     {
         this.enabled = enabled;
 
         if (!enabled)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            UnlockCursor();
+        }
+        else
+        {
+            LockCursor();
+        }
+    }
+
+    // Asegurar que el cursor se bloquee al volver a la ventana
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus && photonView.IsMine && cursorShouldBeLocked)
+        {
+            LockCursor();
         }
     }
 }
+
