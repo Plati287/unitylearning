@@ -1,0 +1,124 @@
+🔥 1. Sistema de contadores (recolectar y quemar)
+
+Tienes dos contadores, y esto es importante:
+
+contador_temporal → lo que recoges
+contador_oficial → lo que ya has “quemado” (guardado)
+
+👉 Ejemplo:
+
+int contador_temporal = 0;
+int contador_oficial = 0;
+💡 ¿Cómo funciona?
+Cada vez que recoges un orbe → aumenta el temporal
+Cuando interactúas con la olla → pasas lo temporal al oficial
+void QuemarOrbes()
+{
+    contador_oficial += contador_temporal;
+    contador_temporal = 0;
+}
+
+✔️ Ejemplo real:
+
+Recoges 3 orbes → temporal = 3
+Vas a la olla → oficial = 3, temporal = 0
+🧠 2. Arrays y objetos (clave para no liarla)
+
+Tienes:
+
+🔹 Array de objetos (los orbes en escena)
+GameObject[] orbes;
+🔹 Array de estado (si están recogidos o no)
+bool[] orbes_recolectados;
+🔹 Inicialización (MUY IMPORTANTE)
+orbes_recolectados = new bool[orbes.Length];
+
+👉 Esto crea un array del mismo tamaño que los orbes
+👉 Todos empiezan en false (no recogidos)
+
+🎯 3. Detectar el orbe más cercano
+
+Tú usas:
+
+int orbe_cercano = -1;
+
+💡 ¿Por qué -1?
+
+Porque significa “no hay ninguno cerca”
+⚙️ 4. Función de recolectar (MEJORADA)
+
+Tu función está bien, pero te la dejo más clara:
+
+void RecolectarOrbe()
+{
+    // Comprobamos que hay un orbe cerca
+    if (orbe_cercano != -1)
+    {
+        // Si NO está ya recogido
+        if (!orbes_recolectados[orbe_cercano])
+        {
+            // Lo marcamos como recogido
+            orbes_recolectados[orbe_cercano] = true;
+
+            // Lo ocultamos en la escena
+            orbes[orbe_cercano].SetActive(false);
+
+            // Sumamos al contador temporal
+            contador_temporal++;
+
+            Debug.Log("Orbe recogido. Total: " + contador_temporal);
+        }
+    }
+}
+🎮 5. Interfaces (botones UI en Unity)
+🔹 Botón de interactuar con la olla
+boton_canvas_olla_interactuar.onClick.AddListener(QuemarOrbes);
+
+👉 Esto hace que al pulsar el botón se ejecute la función
+
+👁️ 6. Activar / desactivar interfaz (muy importante)
+
+Usas booleanos para mostrar UI:
+
+bool puedeInteractuar = false;
+🔹 Ejemplo:
+void Update()
+{
+    if (puedeInteractuar)
+    {
+        canvas_olla.SetActive(true);
+    }
+    else
+    {
+        canvas_olla.SetActive(false);
+    }
+}
+🧪 EJEMPLO COMPLETO (RESUMIDO)
+public GameObject[] orbes;
+bool[] orbes_recolectados;
+
+int contador_temporal = 0;
+int contador_oficial = 0;
+
+int orbe_cercano = -1;
+
+void Start()
+{
+    orbes_recolectados = new bool[orbes.Length];
+}
+
+void RecolectarOrbe()
+{
+    if (orbe_cercano != -1 && !orbes_recolectados[orbe_cercano])
+    {
+        orbes_recolectados[orbe_cercano] = true;
+        orbes[orbe_cercano].SetActive(false);
+        contador_temporal++;
+    }
+}
+
+void QuemarOrbes()
+{
+    contador_oficial += contador_temporal;
+    contador_temporal = 0;
+}
