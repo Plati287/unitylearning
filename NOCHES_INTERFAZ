@@ -1,0 +1,335 @@
+NOCHE 1
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+public class mecanica_noche1 : MonoBehaviour
+{
+    public contador_noche1_script referencia_estado_contador;
+    public float contador_noche1_referencia_tiempo;
+    public script_linterna_antorcha referencia_estado_antorcha;
+    public bool referencia_atorcha_estado;
+    private float distancia_minima_fuego = 10f;
+    public GameObject[] fuego;
+    private bool[] fuego_gastado;
+    private int fuego_cercano = -1;
+    public TextMeshProUGUI contador_fuego_texto;
+    public GameObject interfaz_interaccion_fuego;
+    private bool estados_interaz_fuego;
+    private bool estados_distancias_jugador_fuego;
+    private float contador_fuegos_quemados = 0;
+    public Button boton_interactuar_ui_fuego;
+    public GameObject[] velas; //hay que usarlas para luego ocultarlas cuando el contador tenga 4/4 para iniciar noche2
+    public bool verificar_noche12;
+    public GameObject interfaz_mision1;
+    public GameObject interfaz_mision2;
+
+
+    void Start()
+    {
+        fuego_gastado = new bool[fuego.Length];
+        interfaz_interaccion_fuego.SetActive(false);
+        boton_interactuar_ui_fuego.onClick.AddListener(boton_fuego_funcion);
+        verificar_noche12 = false;
+        interfaz_mision2.SetActive(false);
+
+    }
+
+    void Update()
+    {
+        noche1();
+        funcion_interfaz_interactuar();
+        noche1_noche2();
+    }
+
+    void noche1()
+    {
+        estados_interaz_fuego = false;
+        contador_noche1_referencia_tiempo = referencia_estado_contador.contador_noche1;
+        referencia_atorcha_estado = referencia_estado_antorcha.verificar_estado_antorcha;
+        if(contador_noche1_referencia_tiempo == 0) return;
+        estados_distancias_jugador_fuego = false;
+        for(int i=0; i<fuego.Length; i++)
+        {
+            if(fuego[i] == null) continue;
+            float distancia_actual_fuegos = Vector3.Distance(transform.position, fuego[i].transform.position);
+            if (distancia_actual_fuegos < distancia_minima_fuego && referencia_atorcha_estado == true && contador_noche1_referencia_tiempo > 0)
+            {
+                estados_distancias_jugador_fuego = true;
+                fuego_cercano = i;
+                estados_interaz_fuego = true;
+            }
+
+        }
+
+    }
+
+    void boton_fuego_funcion()
+    {
+        if(estados_distancias_jugador_fuego == true)
+        {
+            if(fuego_cercano != -1 && !fuego_gastado[fuego_cercano])
+            {
+                fuego_gastado[fuego_cercano] = true;
+                fuego[fuego_cercano].SetActive(true);
+                fuego_cercano = -1;
+                contador_fuegos_quemados++;
+                contador_fuego_texto.text = contador_fuegos_quemados+"/4";
+
+            }
+        }
+    }
+
+    void funcion_interfaz_interactuar()
+    {
+        interfaz_interaccion_fuego.SetActive(estados_interaz_fuego);
+    }
+
+    void noche1_noche2()
+    {
+        if(contador_fuegos_quemados == 1)
+        {
+            interfaz_mision1.SetActive(false);
+            interfaz_interaccion_fuego.SetActive(false);
+            interfaz_mision2.SetActive(true);
+
+            verificar_noche12 = true;
+            for(int i=0; i<fuego.Length; i++)
+            {
+                fuego[i].SetActive(false);
+            }
+            for(int a=0; a<velas.Length; a++)
+            {
+                velas[a].SetActive(false);
+            }
+            Debug.Log(verificar_noche12);
+            
+        }
+    }
+}
+
+
+
+
+NOCHE 2
+
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class mecanica_noche2_gameplay : MonoBehaviour
+{
+    public contador_noche2_script referencia_contador_noche2;
+    public float contador_noche2_referencia_tiempo = 0;
+    private float distancia_minima_fuego2 = 10f;
+    public script_linterna_antorcha referencia_estado_antorcha_noche2;
+    public bool antorcha_estado_noche2;
+    public GameObject interfaz_interactuar;
+    private bool estado_interfaz_noche2_interactuar = false;
+    public Button boton_ui_interactuar_noche2;
+    public GameObject[] fuegos2;
+    private bool[] fuegos2_usados;
+    private int fuego_cercano2 = -1;
+    public mecanica_noche1 referencia_verificar_noche12;
+    public bool verificar_noche1;
+    private bool uso_boton_noche2;
+    public float contador_noche2_fuegos2_usados;
+    public TextMeshProUGUI contador_texto_noche2_fuegos2_usados;
+    public GameObject interfaz_noche2;
+    public bool verificar_noche23;
+    public GameObject[] velas2;
+
+    void Start()
+    {
+        fuegos2_usados = new bool[fuegos2.Length];
+        boton_ui_interactuar_noche2.onClick.AddListener(boton_funcion_noche2);
+        verificar_noche23 = false;
+    }
+
+    void Update()
+    {
+        funcionamiento_noche2();
+        funcion_interfaz_interactuar_noche2();
+        noche2_noche3();
+    }
+
+    void funcionamiento_noche2()
+    {
+        estado_interfaz_noche2_interactuar = false;
+        contador_noche2_referencia_tiempo = referencia_contador_noche2.contador_noche2;
+        antorcha_estado_noche2 = referencia_estado_antorcha_noche2.verificar_estado_antorcha;
+        verificar_noche1 = referencia_verificar_noche12.verificar_noche12;
+
+        if (contador_noche2_referencia_tiempo == 0) return;
+
+        if (verificar_noche1 == true)
+        {
+            uso_boton_noche2 = false;
+            estado_interfaz_noche2_interactuar = false;
+            for (int i = 0; i < fuegos2.Length; i++)
+            {
+                float distancia_actual_fuegos2 = Vector3.Distance(transform.position, fuegos2[i].transform.position);
+                if (distancia_actual_fuegos2 < distancia_minima_fuego2 && antorcha_estado_noche2 == true)
+                {
+                    uso_boton_noche2 = true;
+                    fuego_cercano2 = i;
+                    estado_interfaz_noche2_interactuar = true;
+                }
+            }
+        }
+    }
+
+    void boton_funcion_noche2()
+    {
+        if (fuego_cercano2 != -1 && !fuegos2_usados[fuego_cercano2] && uso_boton_noche2 == true)
+        {
+            fuegos2_usados[fuego_cercano2] = true;
+            fuegos2[fuego_cercano2].SetActive(true);
+            contador_noche2_fuegos2_usados++;
+            fuego_cercano2 = -1;
+            contador_texto_noche2_fuegos2_usados.text = contador_noche2_fuegos2_usados + "/6";
+        }
+    }
+
+    void funcion_interfaz_interactuar_noche2()
+    {
+        interfaz_interactuar.SetActive(estado_interfaz_noche2_interactuar);
+    }
+
+    void noche2_noche3()
+    {
+        if (contador_noche2_fuegos2_usados == 1)
+        {
+            interfaz_noche2.SetActive(false);
+            interfaz_interactuar.SetActive(false);
+            verificar_noche23 = true;
+            for (int i = 0; i < fuegos2.Length; i++)
+            {
+                fuegos2[i].SetActive(false);
+            }
+            for (int a = 0; a < velas2.Length; a++)
+            {
+                velas2[a].SetActive(false);
+            }
+        }
+    }
+}
+
+NOCHE3
+
+using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
+
+public class mecanica_noche3 : MonoBehaviour
+{
+    public contador_noche3 referencia_estado_contador_noche3;
+    public float contador_noche3_tiempo;
+
+    public mecanica_noche2_gameplay referencia_noche23;
+    public bool verificar_noche23_bool;
+
+    public GameObject interfaz_mision_noche3;
+    public Button boton_noche3;
+
+    private bool mostrar_ui_interact_noche3 = false;
+    public GameObject[] fuegos_3;
+    private bool[] fuegos3_usados;
+
+    private int fuego3_cercano = -1;
+
+    public GameObject[] velas;
+
+    public script_linterna_antorcha referencia_estado_antorcha_noche3;
+    public bool verificar_estado_antorcha_3;
+
+    private float distancia_minima_fuego3 = 10f;
+
+    private float contador_fuegos_noche3;
+
+    public TextMeshProUGUI contador_fuegos_noche3_texto;
+
+    public bool noche3terminada;
+    public GameObject interfaz_interactuar_noche3;
+    private bool interactuar_boton3 = false; //para que el boton funcione
+
+    void Start()
+    {
+        boton_noche3.onClick.AddListener(boton3_funcion);
+        fuegos3_usados = new bool[fuegos_3.Length];
+        noche3terminada = false;
+    }
+
+    void Update()
+    {
+        funcionamiento_noche3();
+        finalizar_noche3_funcion();
+        funcion_interact_interfaz_interact3();
+    }
+
+    void funcionamiento_noche3()
+    {
+        contador_noche3_tiempo = referencia_estado_contador_noche3.contador_tiempo_noche3;
+        verificar_noche23_bool = referencia_noche23.verificar_noche23;
+        verificar_estado_antorcha_3 = referencia_estado_antorcha_noche3.verificar_estado_antorcha;
+
+        if (contador_noche3_tiempo == 0) return;
+
+        interactuar_boton3 = false;
+        mostrar_ui_interact_noche3 = false;
+
+        for (int i = 0; i < fuegos_3.Length; i++)
+        {
+            if (fuegos_3[i] == null) continue;
+
+            float distancia_actual = Vector3.Distance(
+                transform.position,
+                fuegos_3[i].transform.position
+            );
+
+            if (distancia_actual < distancia_minima_fuego3 &&
+                verificar_estado_antorcha_3 == true &&
+                contador_noche3_tiempo > 0 && verificar_noche23_bool == true)
+            {
+                fuego3_cercano = i;
+                interactuar_boton3 = true;
+                mostrar_ui_interact_noche3 = true;
+            }
+        }
+    }
+
+    void boton3_funcion()
+    {
+        if (fuego3_cercano != -1 &&
+            !fuegos3_usados[fuego3_cercano] &&
+            interactuar_boton3 == true)
+        {
+            fuegos3_usados[fuego3_cercano] = true;
+            fuegos_3[fuego3_cercano].SetActive(true);
+
+            contador_fuegos_noche3++;
+            fuego3_cercano = -1;
+
+            contador_fuegos_noche3_texto.text = contador_fuegos_noche3 + "/8";
+        }
+    }
+
+    void finalizar_noche3_funcion()
+    {
+        if (contador_fuegos_noche3 >= 2 && contador_noche3_tiempo > 0)
+        {
+            interfaz_mision_noche3.SetActive(false);
+            noche3terminada = true;
+
+            for (int i = 0; i < fuegos_3.Length; i++)
+                fuegos_3[i].SetActive(false);
+
+            for (int i = 0; i < velas.Length; i++)
+                velas[i].SetActive(false);
+        }
+    }
+
+    void funcion_interact_interfaz_interact3()
+    {
+        interfaz_interactuar_noche3.SetActive(mostrar_ui_interact_noche3);
+    }
+}
