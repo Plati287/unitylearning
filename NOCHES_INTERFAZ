@@ -23,6 +23,7 @@ public class mecanica_noche1 : MonoBehaviour
     public GameObject interfaz_mision1;
     public GameObject interfaz_mision2;
 
+    private bool perdida_noche12_bool;
 
     void Start()
     {
@@ -31,6 +32,8 @@ public class mecanica_noche1 : MonoBehaviour
         boton_interactuar_ui_fuego.onClick.AddListener(boton_fuego_funcion);
         verificar_noche12 = false;
         interfaz_mision2.SetActive(false);
+        perdida_noche12_bool = true;
+        
 
     }
 
@@ -39,6 +42,7 @@ public class mecanica_noche1 : MonoBehaviour
         noche1();
         funcion_interfaz_interactuar();
         noche1_noche2();
+        perdida_noche12();
     }
 
     void noche1()
@@ -86,11 +90,12 @@ public class mecanica_noche1 : MonoBehaviour
 
     void noche1_noche2()
     {
-        if(contador_fuegos_quemados == 1)
+        if(contador_fuegos_quemados == 1 && contador_noche1_referencia_tiempo >= 0)
         {
             interfaz_mision1.SetActive(false);
             interfaz_interaccion_fuego.SetActive(false);
             interfaz_mision2.SetActive(true);
+            
 
             verificar_noche12 = true;
             for(int i=0; i<fuego.Length; i++)
@@ -104,9 +109,38 @@ public class mecanica_noche1 : MonoBehaviour
             Debug.Log(verificar_noche12);
             
         }
+        if(contador_fuegos_quemados < 4 && contador_noche1_referencia_tiempo <= 0)
+        {
+            perdida_noche12_bool = true;
+            verificar_noche12 = false;
+        }
+    }
+
+    void perdida_noche12()
+{
+    if(contador_noche1_referencia_tiempo <= 0 && contador_fuegos_quemados < 4 && perdida_noche12_bool)
+    {
+        Debug.Log("perdida");
+
+        for(int i = 0; i < fuego.Length; i++)
+        {
+            fuego_gastado[i] = false;
+            if(fuego[i] != null) fuego[i].SetActive(false);
+        }
+
+        contador_fuegos_quemados = 0;
+        fuego_cercano = -1;
+        contador_fuego_texto.text = "0/4";
+        referencia_estado_contador.contador_noche1 = 180f;
+        perdida_noche12_bool = false;
     }
 }
+   
 
+    
+
+    
+}
 
 
 
