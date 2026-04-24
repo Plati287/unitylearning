@@ -1,0 +1,6 @@
+Estructura recomendada (Flujo de Cascada)Para que tu código sea "a prueba de balas", sigue este orden mental
+1.Validación:El IF.Compruebas si las condiciones se cumplen para entrar.
+2.Limpieza de Objetos:El Bucle FOR.Desactivas elementos físicos en la escena. Es lo más propenso a errores, por eso va primero.
+3.Reset de Datos:Variables numéricas.Pones los contadores y referencias en sus valores iniciales.
+4.Actualización Visual:UI/Textos.Reflejas los cambios para el jugador.
+5.Cierre de Estado:El Booleano.Finalmente, cambias el booleano a false. Es la señal de que "todo está listo".
