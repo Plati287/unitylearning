@@ -1,0 +1,56 @@
+using UnityEngine;
+
+public class sonido_pasos : MonoBehaviour
+{
+    //pitch = controladdor de velocidad
+    
+    public bool moviendose = false;
+    public AudioSource emisor;
+
+    void Update()
+    {
+        movimiento();
+        controlar_sonido();
+    }
+
+    void movimiento() 
+    {
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        if(horizontal != 0 || vertical != 0)
+        {
+            moviendose = true;
+        }
+        else
+        {
+            moviendose = false;
+        }
+        
+    }
+
+    void controlar_sonido()
+    {
+        if(moviendose == true)
+        {
+            if(emisor.isPlaying == false)
+            {
+                emisor.Play();
+            }
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                emisor.pitch = 2f;
+            }
+            else
+            {
+                emisor.pitch = 1f;
+            }
+        }
+        else
+        {
+            emisor.Stop();
+        }
+
+    }
+}
+
+
