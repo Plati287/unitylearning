@@ -1,0 +1,106 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+// Controlador del jugador, permite mover al jugador y controlar la cámara
+public class PlayerController : MonoBehaviour
+{
+    // Configuración del movimiento del jugador
+    public float moveSpeed = 5f; // Velocidad normal
+    public float sprintSpeed = 9f; // Velocidad al correr
+
+    // Configuración de la cámara (sensibilidad del ratón)
+    public Vector2 sensibility = new Vector2(2f, 2f);
+
+    // Referencias privadas
+    private new Transform camera;
+    private CharacterController characterController;
+    private float verticalRotation = 0f;
+
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+
+        camera = transform.Find("Camera");
+
+        characterController = GetComponent<CharacterController>();
+
+        if (characterController == null)
+        {
+            characterController = gameObject.AddComponent<CharacterController>();
+        }
+    }
+
+    void Update()
+    {
+        HandleMovement();
+        HandleMouseLook();
+    }
+
+    void HandleMovement()
+    {
+        bool isMovingForward = Input.GetKey(KeyCode.W);
+        bool isMovingBackward = Input.GetKey(KeyCode.S);
+        bool isMovingLeft = Input.GetKey(KeyCode.A);
+        bool isMovingRight = Input.GetKey(KeyCode.D);
+
+        // NUEVO: comprobar si se está pulsando Shift
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+
+        // Elegir velocidad según si corre o no
+        float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
+
+        Vector3 moveDirection = Vector3.zero;
+
+        if (isMovingForward)
+        {
+            moveDirection += transform.forward;
+        }
+
+        if (isMovingBackward)
+        {
+            moveDirection -= transform.forward;
+        }
+
+        if (isMovingRight)
+        {
+            moveDirection += transform.right;
+        }
+
+        if (isMovingLeft)
+        {
+            moveDirection -= transform.right;
+        }
+
+        if (moveDirection.magnitude > 0)
+        {
+            moveDirection = moveDirection.normalized;
+        }
+
+        Vector3 finalMovement = moveDirection * currentSpeed * Time.deltaTime;
+
+        finalMovement.y = -9.81f * Time.deltaTime;
+
+        characterController.Move(finalMovement);
+    }
+
+    void HandleMouseLook()
+    {
+        float mouseX = Input.GetAxis("Mouse X");
+        float mouseY = Input.GetAxis("Mouse Y");
+
+        if (mouseX != 0)
+        {
+            transform.Rotate(Vector3.up * mouseX * sensibility.x);
+        }
+
+        if (mouseY != 0)
+        {
+            verticalRotation -= mouseY * sensibility.y;
+
+            verticalRotation = Mathf.Clamp(verticalRotation, -25f, 35f);
+
+            camera.localEulerAngles = Vector3.right * verticalRotation;
+        }
+    }
+}
